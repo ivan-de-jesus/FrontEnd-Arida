@@ -40,7 +40,7 @@ export default {
 
 <style scoped>
 .card-maiz {
-  background: #f0f0f0;
+  background: #F5F3EF;
   border-radius: 10px;
   padding: 1rem;
   max-width: 320px;

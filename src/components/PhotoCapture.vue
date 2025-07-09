@@ -4,6 +4,7 @@
     <!-- CARD: miniatura o placeholder. Al hacer clic abre el file input oculto -->
    <!-- CARD contenedora cuadrada con sombra -->
 <div
+  v-if="!manualMode"
   class="card shadow photo-box mb-3"
   style="width:320px; height:320px;"  
 >
@@ -16,6 +17,7 @@
       accept="image/*;capture=camera"
       class="d-none"
       @change="handleFile"
+      :disabled="manualMode" 
     />
 
     <!-- Cuadrado interno que se adapta al 100 % de la card -->
@@ -41,17 +43,60 @@
   </label>
 </div>
 
+<!-- OPCIÓN: marcar para ingresar manual -->
+<div class="form-check mb-3" style="max-width: 320px; width: 100%;">
+  <input
+    class="form-check-input"
+    type="checkbox"
+    id="manualMode"
+    v-model="manualMode"
+  />
+  <label class="form-check-label" for="manualMode">
+    Ingresar coordenadas manualmente
+  </label>
+</div>
+
+<div v-if="manualMode" class="card mb-3 w-100" style="max-width: 320px;">
+  <div class="card-body py-2">
+    <div class="mb-2">
+      <label class="form-label">Latitud:</label>
+      <input
+        type="number"
+        step="0.000001"
+        class="form-control"
+        v-model.number="manualLat"
+        placeholder="Ej. 19.432608"
+      />
+    </div>
+    <div>
+      <label class="form-label">Longitud:</label>
+      <input
+        type="number"
+        step="0.000001"
+        class="form-control"
+        v-model.number="manualLng"
+        placeholder="Ej. -99.133209"
+      />
+    </div>
+  </div>
+</div>
+
 
     <!-- CARD: coordenadas -->
-    <div v-if="ready" class="card mb-3 w-100" style="max-width: 320px">
-      <div class="card-body py-2">
-        <strong>Coordenadas:</strong><br />
-        {{ coords.latitude.toFixed(6) }}, {{ coords.longitude.toFixed(6) }}
-      </div>
-    </div>
+   <div v-if="ready" class="card mb-3 w-100" style="max-width: 320px">
+  <div class="card-body py-2">
+    <strong>Coordenadas:</strong><br />
+    <span v-if="manualMode">
+      {{ manualLat.toFixed(6) }}, {{ manualLng.toFixed(6) }}
+    </span>
+    <span v-else>
+      {{ coords.latitude.toFixed(6) }}, {{ coords.longitude.toFixed(6) }}
+    </span>
+  </div>
+</div>
 
      <!-- SLIDERS PARA PARÁMETROS DE BUSQUEDA LANDSAT -->
-   <div v-if="preview" class="card mb-3 w-100 p-3" style="max-width: 320px; ">
+   <div v-if="(preview && !manualMode) || (manualMode && ready)" class="card mb-3 w-100 p-3" style="max-width: 320px; ">
       <!-- Radio -->
       <div class="d-flex justify-content-between align-items-center mb-3">
         <label class="mb-0 text-start" style="flex: 1;">Radio (km): {{ radiusKm }}</label>
@@ -92,14 +137,14 @@
     </div>
     <!-- BOTÓN -->
     <button
-      class="btn w-100 d-flex justify-content-center align-items-center gap-2"
-      :class="ready ? 'btn-success' : 'btn-upload'"
-      style="max-width: 320px"
-      @click="ready ? emitirCoords() : openSelector()"
-    >
-      <i :class="ready ? 'bi bi-geo-alt-fill' : 'bi bi-upload'"></i>
-      <span>{{ ready ? "Ver mapa" : "Subir" }}</span>
-    </button>
+  class="btn w-100 d-flex justify-content-center align-items-center gap-2"
+  :class="ready ? 'btn-success' : 'btn-upload'"
+  style="max-width: 320px"
+  @click="ready ? emitirCoords() : openSelector()"
+>
+  <i :class="ready ? 'bi bi-geo-alt-fill' : 'bi bi-upload'"></i>
+  <span>{{ ready ? "Ver mapa" : "Subir" }}</span>
+</button>
     <!-- ERROR -->
     <div
       v-if="error"
@@ -124,16 +169,26 @@ export default {
         radiusKm: 15,
       daysBack: 30,
       cloudMax: 15,
+       manualMode: false,        // 👈 NUEVO
+    manualLat: null,          // 👈 NUEVO
+    manualLng: null 
     };
   },
   computed: {
-    ready() {
-      return (
-        this.coords &&
-        Number.isFinite(this.coords.latitude) &&
-        Number.isFinite(this.coords.longitude)
-      );
-    },
+  ready() {
+  if (this.manualMode) {
+    return (
+      Number.isFinite(this.manualLat) &&
+      Number.isFinite(this.manualLng)
+    );
+  } else {
+    return (
+      this.coords &&
+      Number.isFinite(this.coords.latitude) &&
+      Number.isFinite(this.coords.longitude)
+    );
+  }
+},
   },
   methods: {
     /** abre el selector si el usuario pulsa el botón antes de elegir archivo */
@@ -169,17 +224,20 @@ export default {
     },
 
    emitirCoords() {
-      // Emitir coords y parámetros para searchLandsat
-      this.$emit('captured', {
-        coords: this.coords,
-        params: {
-          radiusKm: this.radiusKm,
-          daysBack: this.daysBack,
-          cloudMax: this.cloudMax,
-        }
-      });
-    },
-  
+  const coords = this.manualMode
+    ? { latitude: this.manualLat, longitude: this.manualLng }
+    : this.coords;
+
+  this.$emit('captured', {
+    coords,
+    params: {
+      radiusKm: this.radiusKm,
+      daysBack: this.daysBack,
+      cloudMax: this.cloudMax
+    }
+  });
+},
+
   },
   beforeUnmount() {
     /* libera la URL de la miniatura */

@@ -25,6 +25,7 @@ export async function sampleNdwi(nirUrl, swirUrl, lat, lng) {
     tiffNIR.getImage(),
     tiffSWIR.getImage()
   ])
+console.log('GeoKeys:', imgNIR.getGeoKeys())
 
   // 2) Reproyectar lat/lng a coordenadas de mapa (UTM14N)
   const [xMap, yMap] = proj4('EPSG:4326', 'EPSG:32614', [lng, lat])
@@ -40,6 +41,10 @@ export async function sampleNdwi(nirUrl, swirUrl, lat, lng) {
   // 4) Calcular columna/fila de píxel central
   const col = Math.floor((xMap - originX) / resX)
   const row = Math.floor((originY - yMap) / Math.abs(resY))
+
+  console.log('🗺️ Pixel indices → col:', col, 'row:', row)
+console.log('📐 Raster dims → width:', width, 'height:', height)
+
 
   // 5) Definir ventana de muestreo de 3×3 píxeles
   const half = 1

@@ -27,11 +27,7 @@
       <!-- DIAPOSITIVA 2 · MapView + semáforo y botón Guardar -->
       <div class="carousel-item" :class="{ active: step === 2 }">
         <transition name="fade">
-          <MapView
-            v-if="step === 2"
-            :coords="coords"
-            @ndwi-status="updateNdwiStatus"
-          />
+          <MapView v-if="step === 2" :coords="coords" :params="params"  @ndwi-status="updateNdwiStatus" />
         </transition>
 
         <div class="mt-3 card p-3" v-if="step === 2">
@@ -62,95 +58,104 @@
 </template>
 
 <script>
-import { Carousel } from 'bootstrap'
-import axios from 'axios'
+import { Carousel } from "bootstrap";
+import axios from "axios";
 
-import PhotoCapture from '@/components/PhotoCapture.vue'
-import MapView from '@/components/MapView.vue'
+import PhotoCapture from "@/components/PhotoCapture.vue";
+import MapView from "@/components/MapView.vue";
 
 export default {
-  name: 'FlowCarousel',
+  name: "FlowCarousel",
 
   components: {
     PhotoCapture,
-    MapView
+    MapView,
   },
 
   data() {
     return {
-      step: 1,        // 1 = PhotoCapture, 2 = MapView
-      coords: null,   // { latitude, longitude }
-      ndwi: null,     // valor calculado
-      status: null,   // 'Seco' | 'Medio' | 'Húmedo'
+      step: 1, // 1 = PhotoCapture, 2 = MapView
+      coords: null, // { latitude, longitude }
+      params: null,
+      ndwi: null, // valor calculado
+      status: null, // 'Seco' | 'Medio' | 'Húmedo'
       loading: false, // indica cálculo en curso
-      bsCarousel: null
-    }
+      bsCarousel: null,
+    };
   },
 
   computed: {
     statusColor() {
       switch (this.status) {
-        case 'Seco':   return 'red'
-        case 'Medio':  return 'yellow'
-        case 'Húmedo': return 'green'
-        default:       return 'gray'
+        case "Seco":
+          return "red";
+        case "Medio":
+          return "yellow";
+        case "Húmedo":
+          return "green";
+        default:
+          return "gray";
       }
     },
     isLogged() {
       // Simplificado: consideramos sesión activa si hay token
-      return !!localStorage.getItem('authToken')
-    }
+      return !!localStorage.getItem("authToken");
+    },
   },
 
   methods: {
     handleCaptured(payload) {
-      // payload = { coords: { latitude, longitude } }
-      this.coords = payload.coords
-      this.loading = true
-      this.step = 2
-      this.bsCarousel.next()
+      this.coords = payload.coords;
+      this.params = payload.params;
+      this.loading = true;
+      this.step = 2;
+      this.bsCarousel.next();
     },
 
     updateNdwiStatus({ ndwi, status }) {
-      this.ndwi = ndwi
-      this.status = status
-      this.loading = false
+      this.ndwi = ndwi;
+      this.status = status;
+      this.loading = false;
     },
 
     async onGuardar() {
       if (!this.isLogged) {
         // No está logeado → Login
-        this.$router.push({ name: 'login' })
-        return
+        this.$router.push({ name: "login" });
+        return;
       }
 
       try {
         await axios.post(
-          '/api/ndwi',
+          "/api/ndwi",
           { ndwi: this.ndwi },
-          { headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` } }
-        )
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+            },
+          }
+        );
         // Guardó exitosamente → Dashboard
-        this.$router.push({ name: 'Dashboard' })
+        this.$router.push({ name: "Dashboard" });
       } catch (err) {
-        console.error('Error guardando NDWI:', err)
-        this.$bvToast.toast('Error al guardar, intenta de nuevo.', {
-          title: '¡Ups!',
-          variant: 'danger',
-          solid: true
-        })
+        console.error("Error guardando NDWI:", err);
+        this.$bvToast.toast("Error al guardar, intenta de nuevo.", {
+          title: "¡Ups!",
+          variant: "danger",
+          solid: true,
+        });
       }
-    }
+    },
   },
 
   mounted() {
     // Inicializa el carousel de Bootstrap
     this.bsCarousel = new Carousel(this.$refs.carouselEl, {
       touch: true,
-      interval: false
-    })
-  }
-}
+      interval: false,
+    });
+  },
+};
 </script>
 <style scoped>
 .carousel-indicators {

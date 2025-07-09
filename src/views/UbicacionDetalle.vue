@@ -14,7 +14,7 @@
         </div>
       </div>
     </div>
-   <crecimiento-maiz />
+   <crecimiento-maiz class=" card dato-card"/>
     <!-- Aquí podrías agregar más secciones: crecimiento, control, etc. -->
   </div>
 </template>
